@@ -1,2 +1,2 @@
-# imdogo
-images downloader
+# imdoto
+Images Download Tool
