@@ -1,16 +1,38 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"reflect"
 	"regexp"
+	"strings"
 )
 
 type logWriter struct{}
+
+type ImageItem struct {
+	ID  string `json:"id"`
+	Isu string `json:"isu"`
+	Itg int    `json:"itg"`
+	Ity string `json:"ity"`
+	Oh  int    `json:"oh"`
+	Ou  string `json:"ou"`
+	Ow  int    `json:"ow"`
+	Pt  string `json:"pt"`
+	Rh  string `json:"rh"`
+	Rid string `json:"rid"`
+	Rt  int    `json:"rt"`
+	Ru  string `json:"ru"`
+	S   string `json:"s"`
+	Sc  int    `json:"sc"`
+	St  string `json:"st"`
+	Th  int    `json:"th"`
+	Tu  string `json:"tu"`
+	Tw  int    `json:"tw"`
+}
 
 func main() {
 	// fileUrl := "https://golangcode.com/images/avatar.jpg"
@@ -36,21 +58,47 @@ func main() {
 	imageSource := string(body)
 
 	fmt.Println("\n", len(imageSource))
-	fmt.Println(reflect.TypeOf(imageSource))
 
 	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")
 
 	matches := r.FindAllStringSubmatch(imageSource, -1)
-	fmt.Println("GOT : ", len(matches))
+	fmt.Println("GOT ITEMS: ", len(matches))
 
-	for index, each := range matches {
-		fmt.Println("--------->\n", index, each)
+	for _, each := range matches {
+
+		jsonString := each[1]
+		// fmt.Println("-----------------------------------------")
+		// fmt.Println(jsonString)
+		// fmt.Println("-----------------------------------------")
+		img := ImageItem{}
+
+		err := json.Unmarshal([]byte(jsonString), &img)
+		if err != nil {
+			panic(err)
+		}
+
+		url := img.Ou
+
+		fileName := url[strings.LastIndex(img.Ou, "/")+1 : len(url)]
+
+		if err := DownloadImage(fileName, img.Ou); err != nil {
+			//panic(err)
+			println(err.Error())
+			println(jsonString)
+			println("Source:", img.Ou)
+			println(fileName)
+		}
 	}
 }
 
 func DownloadImage(filepath string, url string) error {
+
 	// Get the data
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
