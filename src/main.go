@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -61,53 +60,69 @@ func main() {
 	body, err := ioutil.ReadAll(resp.Body)
 	imageSource := string(body)
 
-	fmt.Println("\n", len(imageSource))
-
 	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")
-
 	matches := r.FindAllStringSubmatch(imageSource, -1)
-	fmt.Println("GOT ITEMS: ", len(matches))
+
+	println("GOT ITEMS: ", len(matches))
 
 	for _, each := range matches {
 
-		jsonString := each[1]
-		// fmt.Println("-----------------------------------------")
-		// fmt.Println(jsonString)
-		// fmt.Println("-----------------------------------------")
-		img := ImageItem{}
-
-		err := json.Unmarshal([]byte(jsonString), &img)
-		if err != nil {
-			panic(err)
-		}
-
-		url := img.Ou
-
-		fileName := ""
-
-		if len(img.Ity) != 0 {
-			fileName = img.ID[0:len(img.ID)-1] + "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.Index(img.Ou, "."+img.Ity)] + "." + img.Ity
-		} else {
-			fileName = img.ID[0:len(img.ID)-1] + ".jpeg"
-		}
-
-		fullName := folderPath + "\\" + fileName
-		// println("<===================================================>")
-		// println("-----------------------------------------------------")
-		// println("Source:", img.Ou)
-		// println(fileName)
-		// println(img.Ou)
-		// println("<===================================================>")
+		img := GetImageItemFromJson(each[1])
+		fullName := GetFileFullName(img, folderPath)
 
 		if err := DownloadImage(fullName, img.Ou); err != nil {
 			//panic(err)
 			println("<==============ERROR======================>")
 			println(err.Error())
-			println(jsonString)
+			println(each[1])
 			println(img.Ou)
 			println("<==============ERROR======================>")
 		}
 	}
+}
+
+func GetFileFullName(img ImageItem, folderPath string) string {
+	url := img.Ou
+	fileName := ""
+	if len(img.Ity) != 0 {
+		fileName = img.ID[0:len(img.ID)-1] + "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.Index(img.Ou, "."+img.Ity)] + "." + img.Ity
+	} else {
+		fileName = img.ID[0:len(img.ID)-1] + ".jpeg"
+	}
+
+	fileName = folderPath + "\\" + CleanFileName(fileName)
+	//println("<===================================================>")
+	// println("-----------------------------------------------------")
+	// println("Source:", img.Ou)
+	println(fileName)
+	// println(img.Ou)
+	//println("<===================================================>")
+
+	return fileName
+}
+
+func CleanFileName(fileName string) string {
+	symbols := [6]string{"*", "?", "%", "\\", "/"}
+	for _, symbol := range symbols {
+		fileName = strings.Replace(fileName, symbol, "", -1)
+	}
+	return fileName
+}
+
+func GetImageItemFromJson(jsonString string) ImageItem {
+
+	// fmt.Println("-----------------------------------------")
+	// fmt.Println(json)
+	// fmt.Println("-----------------------------------------")
+
+	img := ImageItem{}
+
+	err := json.Unmarshal([]byte(jsonString), &img)
+	if err != nil {
+		panic(err)
+	}
+
+	return img
 }
 
 func DownloadImage(filePath string, url string) error {
