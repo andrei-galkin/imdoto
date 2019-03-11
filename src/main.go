@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,8 +11,6 @@ import (
 	"regexp"
 	"strings"
 )
-
-type logWriter struct{}
 
 type ImageItem struct {
 	ID  string `json:"id"`
@@ -36,17 +35,30 @@ type ImageItem struct {
 
 func main() {
 
+	imageFolder := flag.String("folder", "img", "a string")
+	searchTerm := flag.String("searchTerm", "image", "a string")
+	flag.Parse()
+
+	println("Folder:" + *imageFolder)
+	println("Search term:" + *searchTerm)
+
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		panic(err)
 	}
 
-	folderPath := dir + "\\img"
+	folderPath := dir + "\\" + *imageFolder
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		os.Mkdir(folderPath, os.ModePerm)
 	}
 
-	url := "https://www.google.com/search?q=c%23+image&rlz=1C1GCEU_enCA826CA826&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjfgeT_pu7gAhVp74MKHZZHB9wQ_AUIDigB&biw=1536&bih=723&dpr=1.25#imgrc=40_i-tVgNtfjAM:"
+	//Preparing term for the search
+	term := strings.Replace(*searchTerm, " ", "+", -1)
+
+	url := "https://www.google.com/search?q=" + term + "&oq=" + term + "&biw=1536&bih=723&tbm=isch&sa=1&ei=6qqGXM_oDenYjwSw1b-oAw"
+	//url = 'https://www.google.com/search?q=' + keywordem          + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
+	//url = 'https://www.google.com/search?q=' + quote(search_term) + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch' + params + '&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
+	//url = 'https://www.google.com/search?q=' + quote(search_term) + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch' + params + '&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
