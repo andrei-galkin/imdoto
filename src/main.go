@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -35,30 +36,69 @@ type ImageItem struct {
 
 func main() {
 
-	imageFolder := flag.String("folder", "img", "a string")
-	searchTerm := flag.String("searchTerm", "image", "a string")
+	imageFolderName := flag.String("folder", "img", "a string")
+	searchTerm := flag.String("searchTerm", "apple seed", "a string")
+	count := flag.Int("count", 150, "a int")
 	flag.Parse()
 
-	println("Folder:" + *imageFolder)
+	println("Folder:" + *imageFolderName)
 	println("Search term:" + *searchTerm)
+	println("Count:" + strconv.Itoa(*count))
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		panic(err)
 	}
 
-	folderPath := dir + "\\" + *imageFolder
+	folderPath := dir + "\\" + *imageFolderName
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		os.Mkdir(folderPath, os.ModePerm)
 	}
 
 	//Preparing term for the search
 	term := strings.Replace(*searchTerm, " ", "+", -1)
+	var index int
 
-	url := "https://www.google.com/search?q=" + term + "&oq=" + term + "&biw=1536&bih=723&tbm=isch&sa=1&ei=6qqGXM_oDenYjwSw1b-oAw"
-	//url = 'https://www.google.com/search?q=' + keywordem          + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
-	//url = 'https://www.google.com/search?q=' + quote(search_term) + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch' + params + '&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
-	//url = 'https://www.google.com/search?q=' + quote(search_term) + &espv=2&biw=1366&bih=667&site=webhp&source=lnms&tbm=isch' + params + '&sa=X&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'
+	for index <= *count {
+
+		imageLinks := GetImageLinks(term, index)
+		println("GOT ITEMS: ", len(imageLinks))
+
+		for _, imageLink := range imageLinks {
+
+			img := GetImageItemFromJson(imageLink)
+			fullName := GetFileFullName(img, folderPath)
+			index += 1
+			println(strconv.Itoa(index) + "." + img.Ou)
+			println(strconv.Itoa(index) + "." + fullName)
+
+			if err := DownloadImage(fullName, img.Ou); err != nil {
+				//panic(err)
+				println("<==============ERROR======================>")
+				println(err.Error())
+				println(imageLink)
+				println(img.Ou)
+				println("<==============ERROR======================>")
+			}
+
+			if index >= *count {
+				println(strconv.Itoa(index))
+				break
+			}
+		}
+	}
+}
+
+func GetImageLinks(term string, index int) []string {
+
+	url := "https://www.google.com/search?q=" + term + "&oq=" + term
+
+	if index == 0 {
+		url += "&biw=1536&bih=723&tbm=isch&sa=1&ei=6qqGXM_oDenYjwSw1b-oAw"
+	} else {
+		url += "&ijn=" + strconv.Itoa(index/100) + "&start=" + strconv.Itoa(index) +
+			"&biw=1536&bih=723&tbm=isch&sa=1&ei=6qqGXM_oDenYjwSw1b-oAw&yv=3&as_st=y&tbm=isch&asearch=ichunk&async=_id:rg_s,_pms:s,_fmt:pc"
+	}
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
@@ -70,43 +110,35 @@ func main() {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	imageSource := string(body)
+	page := string(body)
 
 	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")
-	matches := r.FindAllStringSubmatch(imageSource, -1)
+	imageLinks := r.FindAllStringSubmatch(page, -1)
 
-	println("GOT ITEMS: ", len(matches))
+	var result []string
 
-	for _, each := range matches {
-
-		img := GetImageItemFromJson(each[1])
-		fullName := GetFileFullName(img, folderPath)
-
-		if err := DownloadImage(fullName, img.Ou); err != nil {
-			//panic(err)
-			println("<==============ERROR======================>")
-			println(err.Error())
-			println(each[1])
-			println(img.Ou)
-			println("<==============ERROR======================>")
-		}
+	for _, ImageItem := range imageLinks {
+		result = append(result, ImageItem[1])
 	}
+
+	return result
 }
 
 func GetFileFullName(img ImageItem, folderPath string) string {
 	url := img.Ou
-	fileName := ""
+	fileName := img.ID[0 : len(img.ID)-1]
+
 	if len(img.Ity) != 0 {
-		fileName = img.ID[0:len(img.ID)-1] + "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.Index(img.Ou, "."+img.Ity)] + "." + img.Ity
+		fileName += "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.LastIndex(img.Ou, ".")] + "." + img.Ity
 	} else {
-		fileName = img.ID[0:len(img.ID)-1] + ".jpeg"
+		fileName += ".jpeg"
 	}
 
 	fileName = folderPath + "\\" + CleanFileName(fileName)
 	//println("<===================================================>")
 	// println("-----------------------------------------------------")
 	// println("Source:", img.Ou)
-	println(fileName)
+	//println(fileName)
 	// println(img.Ou)
 	//println("<===================================================>")
 
@@ -122,11 +154,6 @@ func CleanFileName(fileName string) string {
 }
 
 func GetImageItemFromJson(jsonString string) ImageItem {
-
-	// fmt.Println("-----------------------------------------")
-	// fmt.Println(json)
-	// fmt.Println("-----------------------------------------")
-
 	img := ImageItem{}
 
 	err := json.Unmarshal([]byte(jsonString), &img)
