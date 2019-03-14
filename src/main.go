@@ -38,7 +38,7 @@ func main() {
 
 	imageFolderName := flag.String("folder", "img", "a string")
 	searchTerm := flag.String("searchTerm", "apple seed", "a string")
-	count := flag.Int("count", 150, "a int")
+	count := flag.Int("count", 111, "a int")
 	flag.Parse()
 
 	println("Folder:" + *imageFolderName)
@@ -57,34 +57,35 @@ func main() {
 
 	//Preparing term for the search
 	term := strings.Replace(*searchTerm, " ", "+", -1)
-	var index int
+	//var index int
+	var imageLinks []string
+	imageIndex := 0
 
-	for index <= *count {
+	for index := 1; index <= *count; index++ {
 
-		imageLinks := GetImageLinks(term, index)
-		println("GOT ITEMS: ", len(imageLinks))
+		if imageIndex == 0 {
+			imageLinks = GetImageLinks(term, imageIndex)
+			println("GOT ITEMS: ", len(imageLinks))
+		}
 
-		for _, imageLink := range imageLinks {
+		img, err := GetImageItemFromJson(imageLinks[imageIndex])
+		if err != nil {
+			PrintError(err)
+		}
 
-			img := GetImageItemFromJson(imageLink)
-			fullName := GetFileFullName(img, folderPath)
-			index += 1
-			println(strconv.Itoa(index) + "." + img.Ou)
-			println(strconv.Itoa(index) + "." + fullName)
+		fullName := GetFileFullName(img, folderPath)
 
-			if err := DownloadImage(fullName, img.Ou); err != nil {
-				//panic(err)
-				println("<==============ERROR======================>")
-				println(err.Error())
-				println(imageLink)
-				println(img.Ou)
-				println("<==============ERROR======================>")
-			}
+		indexStr := strconv.Itoa(index) + "."
+		println(indexStr + img.Ou)
+		println(indexStr + fullName)
+		imageIndex += 1
 
-			if index >= *count {
-				println(strconv.Itoa(index))
-				break
-			}
+		if err := DownloadImage(fullName, img.Ou); err != nil {
+			PrintError(err)
+		}
+
+		if imageIndex == 100 {
+			imageIndex = 0
 		}
 	}
 }
@@ -134,15 +135,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 		fileName += ".jpeg"
 	}
 
-	fileName = folderPath + "\\" + CleanFileName(fileName)
-	//println("<===================================================>")
-	// println("-----------------------------------------------------")
-	// println("Source:", img.Ou)
-	//println(fileName)
-	// println(img.Ou)
-	//println("<===================================================>")
-
-	return fileName
+	return folderPath + "\\" + CleanFileName(fileName)
 }
 
 func CleanFileName(fileName string) string {
@@ -153,15 +146,15 @@ func CleanFileName(fileName string) string {
 	return fileName
 }
 
-func GetImageItemFromJson(jsonString string) ImageItem {
+func GetImageItemFromJson(jsonString string) (ImageItem, error) {
 	img := ImageItem{}
 
 	err := json.Unmarshal([]byte(jsonString), &img)
 	if err != nil {
-		panic(err)
+		return img, err
 	}
 
-	return img
+	return img, nil
 }
 
 func DownloadImage(filePath string, url string) error {
@@ -189,4 +182,10 @@ func DownloadImage(filePath string, url string) error {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func PrintError(err error) {
+	println("<==============ERROR======================>")
+	println(err.Error())
+	println("<==============ERROR======================>")
 }
