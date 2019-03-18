@@ -37,13 +37,15 @@ type ImageItem struct {
 func main() {
 
 	imageFolderName := flag.String("folder", "img", "a string")
-	searchTerm := flag.String("searchTerm", "apple seed", "a string")
-	count := flag.Int("count", 111, "a int")
+	term := flag.String("term", "apple seed", "a string")
+	limit := flag.Int("limit", 12, "a int")
+	imageType := flag.String("type", "*", "a string")
 	flag.Parse()
 
 	println("Folder:" + *imageFolderName)
-	println("Search term:" + *searchTerm)
-	println("Count:" + strconv.Itoa(*count))
+	println("Term:" + *term)
+	println("Limit:" + strconv.Itoa(*limit))
+	println("Type:" + *imageType)
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -56,15 +58,16 @@ func main() {
 	}
 
 	//Preparing term for the search
-	term := strings.Replace(*searchTerm, " ", "+", -1)
+	searchTerm := strings.Replace(*term, " ", "+", -1)
 	//var index int
 	var imageLinks []string
 	imageIndex := 0
+	imageCount := *limit
 
-	for index := 1; index <= *count; index++ {
+	for index := 1; index <= imageCount; index++ {
 
 		if imageIndex == 0 {
-			imageLinks = GetImageLinks(term, imageIndex)
+			imageLinks = GetImageLinks(searchTerm, *imageType, imageIndex)
 			println("GOT ITEMS: ", len(imageLinks))
 		}
 
@@ -73,16 +76,12 @@ func main() {
 			PrintError(err)
 		}
 
-		fullName := GetFileFullName(img, folderPath)
+		imageIndex += 1
+
+		DownloadImage(img, folderPath, imageIndex)
 
 		indexStr := strconv.Itoa(index) + "."
 		println(indexStr + img.Ou)
-		println(indexStr + fullName)
-		imageIndex += 1
-
-		if err := DownloadImage(fullName, img.Ou); err != nil {
-			PrintError(err)
-		}
 
 		if imageIndex == 100 {
 			imageIndex = 0
@@ -90,9 +89,19 @@ func main() {
 	}
 }
 
-func GetImageLinks(term string, index int) []string {
+func printNumber(i int) {
+	println("parallel")
+	println(i)
+}
+
+func GetImageLinks(term string, imageType string, index int) []string {
 
 	url := "https://www.google.com/search?q=" + term + "&oq=" + term
+
+	imageType = strings.Trim(imageType, " ")
+	if len(imageType) == 0 || imageType != "*" {
+		url += "&tbs=ift:" + imageType
+	}
 
 	if index == 0 {
 		url += "&biw=1536&bih=723&tbm=isch&sa=1&ei=6qqGXM_oDenYjwSw1b-oAw"
@@ -157,7 +166,7 @@ func GetImageItemFromJson(jsonString string) (ImageItem, error) {
 	return img, nil
 }
 
-func DownloadImage(filePath string, url string) error {
+func Download(filePath string, url string) error {
 
 	// Get the data
 	client := &http.Client{}
@@ -182,6 +191,17 @@ func DownloadImage(filePath string, url string) error {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func DownloadImage(img ImageItem, folderPath string, index int) {
+
+	fullName := GetFileFullName(img, folderPath)
+
+	if err := Download(fullName, img.Ou); err != nil {
+		PrintError(err)
+	}
+
+	//Download(fullName, img.Ou)
 }
 
 func PrintError(err error) {
