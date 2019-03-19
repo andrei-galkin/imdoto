@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type ImageItem struct {
@@ -34,41 +35,28 @@ type ImageItem struct {
 	Tw  int    `json:"tw"`
 }
 
+type DownloadOption struct {
+	Term       string
+	FolderName string
+	Limit      int
+	ImageType  string
+	FolderPath string
+}
+
+var wg sync.WaitGroup
+
 func main() {
+	Download(GetDownloadOption())
+}
 
-	imageFolderName := flag.String("folder", "img", "a string")
-	term := flag.String("term", "apple seed", "a string")
-	limit := flag.Int("limit", 12, "a int")
-	imageType := flag.String("type", "*", "a string")
-	flag.Parse()
-
-	println("Folder:" + *imageFolderName)
-	println("Term:" + *term)
-	println("Limit:" + strconv.Itoa(*limit))
-	println("Type:" + *imageType)
-
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		panic(err)
-	}
-
-	folderPath := dir + "\\" + *imageFolderName
-	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		os.Mkdir(folderPath, os.ModePerm)
-	}
-
-	//Preparing term for the search
-	searchTerm := strings.Replace(*term, " ", "+", -1)
-	//var index int
+func Download(option DownloadOption) {
 	var imageLinks []string
 	imageIndex := 0
-	imageCount := *limit
 
-	for index := 1; index <= imageCount; index++ {
-
+	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
-			imageLinks = GetImageLinks(searchTerm, *imageType, imageIndex)
-			println("GOT ITEMS: ", len(imageLinks))
+			imageLinks = GetImageLinks(option.Term, option.ImageType, index-1)
+			println(len(imageLinks))
 		}
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
@@ -78,10 +66,14 @@ func main() {
 
 		imageIndex += 1
 
-		DownloadImage(img, folderPath, imageIndex)
+		wg.Add(1)
+		go DownloadImage(img, option.FolderPath, index)
+		wg.Wait()
 
-		indexStr := strconv.Itoa(index) + "."
-		println(indexStr + img.Ou)
+		//exit if there is less images then limit
+		if imageIndex == len(imageLinks)-1 && len(imageLinks) != 100 {
+			break
+		}
 
 		if imageIndex == 100 {
 			imageIndex = 0
@@ -89,13 +81,78 @@ func main() {
 	}
 }
 
-func printNumber(i int) {
-	println("parallel")
-	println(i)
+func GetDownloadOption() DownloadOption {
+	folderName := flag.String("folder", "img", "a string")
+	term := flag.String("term", "apple fruit", "a string")
+	limit := flag.Int("limit", 12, "a int")
+	imageType := flag.String("type", "*", "a string")
+	flag.Parse()
+
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		panic(err)
+	}
+
+	folderPath := dir + "\\" + *folderName
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		os.Mkdir(folderPath, os.ModePerm)
+	}
+
+	var option DownloadOption
+	option.Term = strings.Replace(*term, " ", "+", -1)
+	option.FolderName = *folderName
+	option.FolderPath = folderPath
+	option.Limit = *limit
+	option.ImageType = *imageType
+
+	return option
+}
+
+func DownloadFile(filePath string, url string) error {
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36")
+	req.Header.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+	req.Header.Add("authority", "cdn-images-1.medium.com")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func DownloadImage(img ImageItem, folderPath string, index int) {
+	fullName := GetFileFullName(img, folderPath)
+
+	if err := DownloadFile(fullName, img.Ou); err != nil {
+		PrintError(err)
+	}
+	indexStr := strconv.Itoa(index) + "."
+	println(indexStr + img.Ou + " -> DONE")
+	wg.Done()
+}
+
+func CleanFileName(fileName string) string {
+	symbols := [6]string{"*", "?", "%", "\\", "/"}
+	for _, symbol := range symbols {
+		fileName = strings.Replace(fileName, symbol, "", -1)
+	}
+	return fileName
 }
 
 func GetImageLinks(term string, imageType string, index int) []string {
-
 	url := "https://www.google.com/search?q=" + term + "&oq=" + term
 
 	imageType = strings.Trim(imageType, " ")
@@ -147,14 +204,6 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 	return folderPath + "\\" + CleanFileName(fileName)
 }
 
-func CleanFileName(fileName string) string {
-	symbols := [6]string{"*", "?", "%", "\\", "/"}
-	for _, symbol := range symbols {
-		fileName = strings.Replace(fileName, symbol, "", -1)
-	}
-	return fileName
-}
-
 func GetImageItemFromJson(jsonString string) (ImageItem, error) {
 	img := ImageItem{}
 
@@ -164,44 +213,6 @@ func GetImageItemFromJson(jsonString string) (ImageItem, error) {
 	}
 
 	return img, nil
-}
-
-func Download(filePath string, url string) error {
-
-	// Get the data
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36")
-	req.Header.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-	req.Header.Add("authority", "cdn-images-1.medium.com")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
-}
-
-func DownloadImage(img ImageItem, folderPath string, index int) {
-
-	fullName := GetFileFullName(img, folderPath)
-
-	if err := Download(fullName, img.Ou); err != nil {
-		PrintError(err)
-	}
-
-	//Download(fullName, img.Ou)
 }
 
 func PrintError(err error) {
