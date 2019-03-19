@@ -56,7 +56,6 @@ func Download(option DownloadOption) {
 	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
 			imageLinks = GetImageLinks(option.Term, option.ImageType, index-1)
-			println(len(imageLinks))
 		}
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
