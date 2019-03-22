@@ -1,6 +1,6 @@
 package main
 
-import g "imdoto/src/gsearch"
+import g "github.com/andrei-galkin/imdoto/gsearch"
 
 func main() {
 	g.Download(g.GetDownloadOption())
