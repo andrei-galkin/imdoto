@@ -28,7 +28,7 @@ type ImageItem struct {
 	Tw  int    `json:"tw"`
 }
 
-type DownloadOption struct {
+type LoadOption struct {
 	Term       string
 	FolderName string
 	Limit      int
@@ -36,7 +36,7 @@ type DownloadOption struct {
 	FolderPath string
 }
 
-func GetDownloadOption() DownloadOption {
+func GetLoadOption() LoadOption {
 	folderName := flag.String("folder", "img", "a string")
 	term := flag.String("term", "apple fruit", "a string")
 	limit := flag.Int("limit", 12, "a int")
@@ -53,7 +53,7 @@ func GetDownloadOption() DownloadOption {
 		os.Mkdir(folderPath, os.ModePerm)
 	}
 
-	var option DownloadOption
+	var option LoadOption
 	option.Term = strings.Replace(*term, " ", "+", -1)
 	option.FolderName = *folderName
 	option.FolderPath = folderPath

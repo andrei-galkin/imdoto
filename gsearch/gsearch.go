@@ -12,9 +12,11 @@ import (
 	"sync"
 )
 
+import im "github.com/andrei-galkin/imdoto/imdoto"
+
 var wg sync.WaitGroup
 
-func Download(option DownloadOption) {
+func Download(option im.LoadOption) {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -25,7 +27,7 @@ func Download(option DownloadOption) {
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
 		if err != nil {
-			PrintError(err)
+			im.PrintError(err)
 		}
 
 		imageIndex += 1
@@ -71,11 +73,11 @@ func DownloadFile(filePath string, url string) error {
 	return err
 }
 
-func DownloadImage(img ImageItem, folderPath string, index int) {
+func DownloadImage(img im.ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := DownloadFile(fullName, img.Ou); err != nil {
-		PrintError(err)
+		im.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
 	println(indexStr + img.Ou + " -> DONE")
@@ -121,7 +123,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	return result
 }
 
-func GetFileFullName(img ImageItem, folderPath string) string {
+func GetFileFullName(img im.ImageItem, folderPath string) string {
 	url := img.Ou
 	fileName := img.ID[0 : len(img.ID)-1]
 
@@ -131,11 +133,11 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 		fileName += ".jpeg"
 	}
 
-	return folderPath + "\\" + CleanFileName(fileName)
+	return folderPath + "\\" + im.CleanFileName(fileName)
 }
 
-func GetImageItemFromJson(jsonString string) (ImageItem, error) {
-	img := ImageItem{}
+func GetImageItemFromJson(jsonString string) (im.ImageItem, error) {
+	img := im.ImageItem{}
 
 	err := json.Unmarshal([]byte(jsonString), &img)
 	if err != nil {
