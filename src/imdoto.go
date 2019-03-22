@@ -67,7 +67,6 @@ func Download(option DownloadOption) {
 
 		wg.Add(1)
 		go DownloadImage(img, option.FolderPath, index)
-		wg.Wait()
 
 		//exit if there is less images then limit
 		if imageIndex == len(imageLinks)-1 && len(imageLinks) != 100 {
@@ -78,6 +77,8 @@ func Download(option DownloadOption) {
 			imageIndex = 0
 		}
 	}
+
+	wg.Wait()
 }
 
 func GetDownloadOption() DownloadOption {
