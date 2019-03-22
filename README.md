@@ -6,7 +6,7 @@ This console utility lets you download dozens of images from Google search engin
 
 # Build
 Go to **src** folder and run the command 
-``` go build imdoto.go ```
+``` go build main.go ```
 
 # Arguments
 Argument | Description
