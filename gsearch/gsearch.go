@@ -2,46 +2,15 @@ package gsearch
 
 import (
 	"encoding/json"
-	"flag"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 )
-
-type ImageItem struct {
-	ID  string `json:"id"`
-	Isu string `json:"isu"`
-	Itg int    `json:"itg"`
-	Ity string `json:"ity"`
-	Oh  int    `json:"oh"`
-	Ou  string `json:"ou"`
-	Ow  int    `json:"ow"`
-	Pt  string `json:"pt"`
-	Rh  string `json:"rh"`
-	Rid string `json:"rid"`
-	Rt  int    `json:"rt"`
-	Ru  string `json:"ru"`
-	S   string `json:"s"`
-	Sc  int    `json:"sc"`
-	St  string `json:"st"`
-	Th  int    `json:"th"`
-	Tu  string `json:"tu"`
-	Tw  int    `json:"tw"`
-}
-
-type DownloadOption struct {
-	Term       string
-	FolderName string
-	Limit      int
-	ImageType  string
-	FolderPath string
-}
 
 var wg sync.WaitGroup
 
@@ -75,33 +44,6 @@ func Download(option DownloadOption) {
 	}
 
 	wg.Wait()
-}
-
-func GetDownloadOption() DownloadOption {
-	folderName := flag.String("folder", "img", "a string")
-	term := flag.String("term", "apple fruit", "a string")
-	limit := flag.Int("limit", 12, "a int")
-	imageType := flag.String("type", "*", "a string")
-	flag.Parse()
-
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		panic(err)
-	}
-
-	folderPath := dir + "\\" + *folderName
-	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		os.Mkdir(folderPath, os.ModePerm)
-	}
-
-	var option DownloadOption
-	option.Term = strings.Replace(*term, " ", "+", -1)
-	option.FolderName = *folderName
-	option.FolderPath = folderPath
-	option.Limit = *limit
-	option.ImageType = *imageType
-
-	return option
 }
 
 func DownloadFile(filePath string, url string) error {
@@ -138,14 +80,6 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 	indexStr := strconv.Itoa(index) + "."
 	println(indexStr + img.Ou + " -> DONE")
 	wg.Done()
-}
-
-func CleanFileName(fileName string) string {
-	symbols := [6]string{"*", "?", "%", "\\", "/"}
-	for _, symbol := range symbols {
-		fileName = strings.Replace(fileName, symbol, "", -1)
-	}
-	return fileName
 }
 
 func GetImageLinks(term string, imageType string, index int) []string {
@@ -209,10 +143,4 @@ func GetImageItemFromJson(jsonString string) (ImageItem, error) {
 	}
 
 	return img, nil
-}
-
-func PrintError(err error) {
-	println("<==============ERROR======================>")
-	println(err.Error())
-	println("<==============ERROR======================>")
 }
