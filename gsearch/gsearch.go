@@ -14,9 +14,30 @@ import (
 
 import im "github.com/andrei-galkin/imdoto/imdoto"
 
+type ImageItem struct {
+	ID  string `json:"id"`
+	Isu string `json:"isu"`
+	Itg int    `json:"itg"`
+	Ity string `json:"ity"`
+	Oh  int    `json:"oh"`
+	Ou  string `json:"ou"`
+	Ow  int    `json:"ow"`
+	Pt  string `json:"pt"`
+	Rh  string `json:"rh"`
+	Rid string `json:"rid"`
+	Rt  int    `json:"rt"`
+	Ru  string `json:"ru"`
+	S   string `json:"s"`
+	Sc  int    `json:"sc"`
+	St  string `json:"st"`
+	Th  int    `json:"th"`
+	Tu  string `json:"tu"`
+	Tw  int    `json:"tw"`
+}
+
 var wg sync.WaitGroup
 
-func Download(option im.LoadOption) {
+func Download(option im.Setting) {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -73,7 +94,7 @@ func DownloadFile(filePath string, url string) error {
 	return err
 }
 
-func DownloadImage(img im.ImageItem, folderPath string, index int) {
+func DownloadImage(img ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := DownloadFile(fullName, img.Ou); err != nil {
@@ -123,7 +144,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	return result
 }
 
-func GetFileFullName(img im.ImageItem, folderPath string) string {
+func GetFileFullName(img ImageItem, folderPath string) string {
 	url := img.Ou
 	fileName := img.ID[0 : len(img.ID)-1]
 
@@ -136,8 +157,8 @@ func GetFileFullName(img im.ImageItem, folderPath string) string {
 	return folderPath + "\\" + im.CleanFileName(fileName)
 }
 
-func GetImageItemFromJson(jsonString string) (im.ImageItem, error) {
-	img := im.ImageItem{}
+func GetImageItemFromJson(jsonString string) (ImageItem, error) {
+	img := ImageItem{}
 
 	err := json.Unmarshal([]byte(jsonString), &img)
 	if err != nil {

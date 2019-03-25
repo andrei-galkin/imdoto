@@ -7,28 +7,8 @@ import (
 	"strings"
 )
 
-type ImageItem struct {
-	ID  string `json:"id"`
-	Isu string `json:"isu"`
-	Itg int    `json:"itg"`
-	Ity string `json:"ity"`
-	Oh  int    `json:"oh"`
-	Ou  string `json:"ou"`
-	Ow  int    `json:"ow"`
-	Pt  string `json:"pt"`
-	Rh  string `json:"rh"`
-	Rid string `json:"rid"`
-	Rt  int    `json:"rt"`
-	Ru  string `json:"ru"`
-	S   string `json:"s"`
-	Sc  int    `json:"sc"`
-	St  string `json:"st"`
-	Th  int    `json:"th"`
-	Tu  string `json:"tu"`
-	Tw  int    `json:"tw"`
-}
-
-type LoadOption struct {
+type Setting struct {
+	Engine     string
 	Term       string
 	FolderName string
 	Limit      int
@@ -36,10 +16,11 @@ type LoadOption struct {
 	FolderPath string
 }
 
-func GetLoadOption() LoadOption {
+func GetSetting() Setting {
+	engine := flag.String("engin", "bing", "a string")
 	folderName := flag.String("folder", "img", "a string")
-	term := flag.String("term", "apple fruit", "a string")
-	limit := flag.Int("limit", 12, "a int")
+	term := flag.String("term", "apple", "a string")
+	limit := flag.Int("limit", 50, "a int")
 	imageType := flag.String("type", "*", "a string")
 	flag.Parse()
 
@@ -53,14 +34,15 @@ func GetLoadOption() LoadOption {
 		os.Mkdir(folderPath, os.ModePerm)
 	}
 
-	var option LoadOption
-	option.Term = strings.Replace(*term, " ", "+", -1)
-	option.FolderName = *folderName
-	option.FolderPath = folderPath
-	option.Limit = *limit
-	option.ImageType = *imageType
+	var setting Setting
+	setting.Term = strings.Replace(*term, " ", "+", -1)
+	setting.FolderName = *folderName
+	setting.FolderPath = folderPath
+	setting.Limit = *limit
+	setting.ImageType = *imageType
+	setting.Engine = *engine
 
-	return option
+	return setting
 }
 
 func CleanFileName(fileName string) string {

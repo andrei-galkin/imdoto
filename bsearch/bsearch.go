@@ -14,9 +14,21 @@ import (
 
 import im "github.com/andrei-galkin/imdoto/imdoto"
 
+type ImageItem struct {
+	Cid   string `json:"cid"`
+	Purl  string `json:"purl"`
+	Murl  string `json:"murl"`
+	Turl  string `json:"turl"`
+	Md5   string `json:"md5"`
+	Shkey string `json:"shkey"`
+	T     string `json:"t"`
+	Mid   string `json:"mid"`
+	Desc  string `json:"desc"`
+}
+
 var wg sync.WaitGroup
 
-func Download(option im.LoadOption) {
+func Download(option im.Setting) {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -73,14 +85,14 @@ func DownloadFile(filePath string, url string) error {
 	return err
 }
 
-func DownloadImage(img im.ImageItem, folderPath string, index int) {
+func DownloadImage(img ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
-	if err := DownloadFile(fullName, img.Ou); err != nil {
+	if err := DownloadFile(fullName, img.Murl); err != nil {
 		im.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
-	println(indexStr + img.Ou + " -> DONE")
+	println(indexStr + img.Murl + " -> DONE")
 	wg.Done()
 }
 
@@ -107,35 +119,35 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	body, err := ioutil.ReadAll(resp.Body)
 	page := string(body)
 
-	println(page)
-
-	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")
+	r := regexp.MustCompile(" m=\"([\\s\\S]*?)\" onclick=\"")
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
 	var result []string
 
+	println(len(imageLinks))
+
 	for _, ImageItem := range imageLinks {
-		result = append(result, ImageItem[1])
+		println(RestoreQuotes(ImageItem[1]))
+
+		result = append(result, RestoreQuotes(ImageItem[1]))
 	}
 
 	return result
 }
 
-func GetFileFullName(img im.ImageItem, folderPath string) string {
-	url := img.Ou
-	fileName := img.ID[0 : len(img.ID)-1]
+func GetFileFullName(img ImageItem, folderPath string) string {
+	url := img.Murl
+	fileName := img.Cid + "_" + url[strings.LastIndex(img.Murl, "/")+1:len(img.Murl)]
 
-	if len(img.Ity) != 0 {
-		fileName += "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.LastIndex(img.Ou, ".")] + "." + img.Ity
-	} else {
+	if strings.LastIndex(img.Murl, ".") == -1 {
 		fileName += ".jpeg"
 	}
 
 	return folderPath + "\\" + im.CleanFileName(fileName)
 }
 
-func GetImageItemFromJson(jsonString string) (im.ImageItem, error) {
-	img := im.ImageItem{}
+func GetImageItemFromJson(jsonString string) (ImageItem, error) {
+	img := ImageItem{}
 
 	err := json.Unmarshal([]byte(jsonString), &img)
 	if err != nil {
@@ -143,4 +155,8 @@ func GetImageItemFromJson(jsonString string) (im.ImageItem, error) {
 	}
 
 	return img, nil
+}
+
+func RestoreQuotes(jsonString string) string {
+	return strings.Replace(jsonString, "&quot;", "\"", -1)
 }
