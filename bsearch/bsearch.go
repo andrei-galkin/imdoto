@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-)
 
-import im "github.com/andrei-galkin/imdoto/imdoto"
+	im "github.com/andrei-galkin/imdoto/imdoto"
+)
 
 type ImageItem struct {
 	Cid   string `json:"cid"`
@@ -97,8 +97,8 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 }
 
 func GetImageLinks(term string, imageType string, index int) []string {
-	url := "https://www.bing.com/images/search?scenario=ImageBasicHover&datsrc=N_I&layout=RowBased&mmasync=1"
-	url += "&q=" + term + "&pq=" + term
+	url := "https://www.bing.com/images/async?scenario=ImageBasicHover&datsrc=N_I&layout=RowBased&mmasync=1"
+	url += "&q=" + term
 
 	imageType = strings.Trim(imageType, " ")
 	if len(imageType) == 0 || imageType != "*" {
@@ -123,12 +123,9 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
 	var result []string
-
-	println(len(imageLinks))
+	println(url)
 
 	for _, ImageItem := range imageLinks {
-		println(RestoreQuotes(ImageItem[1]))
-
 		result = append(result, RestoreQuotes(ImageItem[1]))
 	}
 
