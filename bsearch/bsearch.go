@@ -123,7 +123,6 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
 	var result []string
-	println(url)
 
 	for _, ImageItem := range imageLinks {
 		result = append(result, RestoreQuotes(ImageItem[1]))
@@ -135,6 +134,12 @@ func GetImageLinks(term string, imageType string, index int) []string {
 func GetFileFullName(img ImageItem, folderPath string) string {
 	url := img.Murl
 	fileName := img.Cid + "_" + url[strings.LastIndex(img.Murl, "/")+1:len(img.Murl)]
+
+	if strings.LastIndex(img.Murl, "?") == -1 {
+		fileName += url[strings.LastIndex(img.Murl, "/")+1 : len(img.Murl)]
+	} else {
+		fileName = url[strings.LastIndex(img.Murl, "/")+1 : strings.LastIndex(img.Murl, "?")]
+	}
 
 	if strings.LastIndex(img.Murl, ".") == -1 {
 		fileName += ".jpeg"

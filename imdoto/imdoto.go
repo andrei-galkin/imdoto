@@ -17,7 +17,7 @@ type Setting struct {
 }
 
 func GetSetting() Setting {
-	engine := flag.String("engin", "bing", "a string")
+	engine := flag.String("engine", "bing", "a string")
 	folderName := flag.String("folder", "img", "a string")
 	term := flag.String("term", "apple", "a string")
 	limit := flag.Int("limit", 50, "a int")
