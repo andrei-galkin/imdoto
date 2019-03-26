@@ -20,7 +20,7 @@ func GetSetting() Setting {
 	engine := flag.String("engine", "bing", "a string")
 	folderName := flag.String("folder", "img", "a string")
 	term := flag.String("term", "apple", "a string")
-	limit := flag.Int("limit", 50, "a int")
+	limit := flag.Int("limit", 700, "a int")
 	imageType := flag.String("type", "*", "a string")
 	flag.Parse()
 
@@ -46,7 +46,7 @@ func GetSetting() Setting {
 }
 
 func CleanFileName(fileName string) string {
-	symbols := [6]string{"*", "?", "%", "\\", "/"}
+	symbols := [6]string{"*", "?", "%", "\\", "/", " "}
 	for _, symbol := range symbols {
 		fileName = strings.Replace(fileName, symbol, "", -1)
 	}

@@ -92,7 +92,11 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 		im.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
-	println(indexStr + img.Murl + " -> DONE")
+
+	println(indexStr + img.Murl)
+	println(fullName)
+	println("DONE")
+
 	wg.Done()
 }
 
@@ -113,7 +117,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		im.PrintError(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -143,6 +147,10 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 
 	if strings.LastIndex(img.Murl, ".") == -1 {
 		fileName += ".jpeg"
+	}
+
+	if len(fileName) > 250 {
+		fileName = img.Cid + fileName[strings.LastIndex(fileName, ".")+1:len(fileName)]
 	}
 
 	return folderPath + "\\" + im.CleanFileName(fileName)

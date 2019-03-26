@@ -126,7 +126,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		im.PrintError(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
