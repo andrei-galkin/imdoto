@@ -139,9 +139,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 	url := img.Murl
 	fileName := img.Cid + "_" + url[strings.LastIndex(img.Murl, "/")+1:len(img.Murl)]
 
-	if strings.LastIndex(img.Murl, "?") == -1 {
-		fileName += url[strings.LastIndex(img.Murl, "/")+1 : len(img.Murl)]
-	} else {
+	if strings.LastIndex(img.Murl, "?") != -1 {
 		fileName = url[strings.LastIndex(img.Murl, "/")+1 : strings.LastIndex(img.Murl, "?")]
 	}
 

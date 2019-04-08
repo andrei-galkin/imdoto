@@ -101,7 +101,11 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 		im.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
-	println(indexStr + img.Ou + " -> DONE")
+
+	println(indexStr + img.Ou)
+	println(fullName)
+	println("DONE")
+
 	wg.Done()
 }
 
