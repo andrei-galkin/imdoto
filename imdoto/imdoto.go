@@ -46,7 +46,7 @@ func GetSetting() Setting {
 }
 
 func CleanFileName(fileName string) string {
-	symbols := [8]string{"*", "?", "%", "\\", "/", " ", "+", "#"}
+	symbols := [9]string{"*", "?", "%", "\\", "/", " ", "+", "#", "@"}
 	for _, symbol := range symbols {
 		fileName = strings.Replace(fileName, symbol, "", -1)
 	}
