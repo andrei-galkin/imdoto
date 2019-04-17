@@ -151,7 +151,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 		fileName = img.Cid + fileName[strings.LastIndex(fileName, ".")+1:len(fileName)]
 	}
 
-	return folderPath + "\\" + im.CleanFileName(fileName)
+	return folderPath + `\` + im.CleanFileName(fileName)
 }
 
 func GetImageItemFromJson(jsonString string) (ImageItem, error) {

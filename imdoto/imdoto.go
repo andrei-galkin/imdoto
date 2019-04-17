@@ -29,7 +29,7 @@ func GetSetting() Setting {
 		panic(err)
 	}
 
-	folderPath := dir + "\\" + *folderName
+	folderPath := dir + `\` + *folderName
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		os.Mkdir(folderPath, os.ModePerm)
 	}
