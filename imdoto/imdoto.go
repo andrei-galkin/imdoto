@@ -17,10 +17,10 @@ type Setting struct {
 }
 
 func GetSetting() Setting {
-	engine := flag.String("engine", "bing", "a string")
+	engine := flag.String("engine", "yandex", "a string")
 	folderName := flag.String("folder", "img", "a string")
 	term := flag.String("term", "apple", "a string")
-	limit := flag.Int("limit", 700, "a int")
+	limit := flag.Int("limit", 75, "a int")
 	imageType := flag.String("type", "*", "a string")
 	flag.Parse()
 
