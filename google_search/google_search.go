@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-import im "github.com/andrei-galkin/imdoto/imdoto"
+import shared "github.com/andrei-galkin/imdoto/shared"
 
 type ImageItem struct {
 	ID  string `json:"id"`
@@ -37,7 +37,7 @@ type ImageItem struct {
 
 var wg sync.WaitGroup
 
-func Download(option im.Setting) {
+func Download(option shared.Setting) {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -48,7 +48,7 @@ func Download(option im.Setting) {
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
 		if err != nil {
-			im.PrintError(err)
+			shared.PrintError(err)
 		}
 
 		imageIndex += 1
@@ -98,7 +98,7 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := DownloadFile(fullName, img.Ou); err != nil {
-		im.PrintError(err)
+		shared.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
 
@@ -130,7 +130,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		im.PrintError(err)
+		shared.PrintError(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -158,7 +158,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 		fileName += ".jpeg"
 	}
 
-	return folderPath + "\\" + im.CleanFileName(fileName)
+	return folderPath + "\\" + shared.CleanFileName(fileName)
 }
 
 func GetImageItemFromJson(jsonString string) (ImageItem, error) {

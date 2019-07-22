@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-import im "github.com/andrei-galkin/imdoto/imdoto"
+import shared "github.com/andrei-galkin/imdoto/shared"
 
 type ImageItem struct {
 	Cnt    string `json:"cnt"`
@@ -43,7 +43,7 @@ type ImageItem struct {
 
 var wg sync.WaitGroup
 
-func Download(option im.Setting) {
+func Download(option shared.Setting) {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -51,11 +51,6 @@ func Download(option im.Setting) {
 		if imageIndex == 0 {
 			imageLinks = GetImageLinks(option.Term, option.ImageType, index)
 		}
-
-		// img, err := GetImageItemFromJson(imageLinks[imageIndex])
-		// if err != nil {
-		// 	im.PrintError(err)
-		// }
 
 		wg.Add(1)
 		go DownloadImage(imageLinks[imageIndex], option.FolderPath, index)
@@ -104,7 +99,7 @@ func DownloadImage(url string, folderPath string, index int) {
 	fullName := GetFileFullName(url, folderPath)
 
 	if err := DownloadFile(fullName, url); err != nil {
-		im.PrintError(err)
+		shared.PrintError(err)
 	}
 	indexStr := strconv.Itoa(index) + "."
 
@@ -127,19 +122,18 @@ func GetImageLinks(term string, imageType string, index int) []string {
 
 	url += "&request={%22blocks%22:[{%22block%22:%22gallery__items:ajax%22,%22params%22:{},%22version%22:2}]}"
 
-	println(url)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		im.PrintError(err)
+		shared.PrintError(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	page := string(body)
-	println(page)
+
 	r := regexp.MustCompile(`img_url=([\s\S]*?)&amp;text=`)
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
@@ -152,19 +146,23 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	return result
 }
 
-func GetFileFullName(img string, folderPath string) string {
+func GetFileFullName(img string, folderPath string) string {	
 	url := img
-	fileName := url
+	fileName := ""
+
+	if strings.LastIndex(url, "/") != -1 {
+		fileName = url[strings.LastIndex(url, "/") + 1 : len(url)]		
+	}
 
 	if strings.LastIndex(url, "?") != -1 {
-		fileName = url[strings.LastIndex(url, "/")+1 : strings.LastIndex(url, "?")]
+		fileName = url[strings.LastIndex(url, "/") + 1 : strings.LastIndex(url, "?")]		
 	}
 
 	if strings.LastIndex(url, ".") == -1 {
 		fileName += ".jpeg"
 	}
 
-	return folderPath + "\\" + im.CleanFileName(fileName)
+	return folderPath + "\\" + shared.CleanFileName(fileName)
 }
 
 func GetImageItemFromJson(jsonString string) (ImageItem, error) {
