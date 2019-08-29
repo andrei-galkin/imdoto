@@ -18,7 +18,7 @@ type   | File types such as jpeg, png, bmp, gif or * is any file type
 limit  | How many images you are going to download from the seach result
 
 # Example
-```imtodo -key "apple seed" -folder img -type * -limit 10```
+```imdoto.exe -engine "google" -limit 1000 -term "apple seed"```
 
 # Contribute
 Anyone is welcomed to contribute to this script. If you would like to make a change, open a pull request. For issues and discussion visit the Issue Tracker.
