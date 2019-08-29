@@ -11,7 +11,7 @@ Go to **imdoto** folder and run the command
 # Arguments
 Argument | Description
 ------------ | -------------
-engine | google or bing
+engine | google, bing and yandex
 key    | Denotes the term or phrases you want to search for. For more than one keywords, wrap it in single quotes.
 folder | The name of the folder where the downloaded images will be stored
 type   | File types such as jpeg, png, bmp, gif or * is any file type
