@@ -1,0 +1,34 @@
+.DS_Store
+Thumbs.db
+
+# Binaries
+/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Build output
+dist/
+_build/
+
+# Dependency directories
+/vendor/
+
+# Go coverage and test cache
+coverage.out
+testdata/
+*.coverprofile
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Ignore IDE project files
+*.iml

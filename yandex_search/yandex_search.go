@@ -15,30 +15,19 @@ import (
 import shared "github.com/andrei-galkin/imdoto/shared"
 
 type ImageItem struct {
-	Cnt    string `json:"cnt"`
-	Blocks []struct {
-		Name struct {
-			Block string `json:"block"`
-			Mods  struct {
-			} `json:"mods"`
-		} `json:"name"`
-		Params struct {
-			PageNum int           `json:"pageNum"`
-			Bundles []interface{} `json:"bundles"`
-		} `json:"params"`
-		HTML string `json:"html"`
-	} `json:"blocks"`
-	Metadata struct {
-		BundlesMetadata struct {
-			Lb string `json:"lb"`
-		} `json:"bundlesMetadata"`
-		AssetsMetadata struct {
-			Las string `json:"las"`
-		} `json:"assetsMetadata"`
-	} `json:"metadata"`
-	Assets struct {
-		Assets []interface{} `json:"assets"`
-	} `json:"assets"`
+	ID   string `json:"id"`
+	Dups []struct {
+		URL             string `json:"url"`
+		FileSizeInBytes int    `json:"fileSizeInBytes"`
+		W               int    `json:"w"`
+		H               int    `json:"h"`
+		Origin          struct {
+			W   int    `json:"w"`
+			H   int    `json:"h"`
+			URL string `json:"url"`
+		} `json:"origin"`
+		IsMixedImage bool `json:"isMixedImage"`
+	} `json:"dups"`
 }
 
 var wg sync.WaitGroup
@@ -96,7 +85,7 @@ func DownloadFile(filePath string, url string) error {
 }
 
 func DownloadImage(url string, folderPath string, index int) {
-	fullName := GetFileFullName(url, folderPath)
+	fullName := GetFileFullNameFromURL(url, folderPath)
 
 	if err := DownloadFile(fullName, url); err != nil {
 		shared.PrintError(err)
@@ -108,6 +97,25 @@ func DownloadImage(url string, folderPath string, index int) {
 	println("DONE")
 
 	wg.Done()
+}
+
+// GetFileFullNameFromURL builds a filename when only the image URL is available.
+func GetFileFullNameFromURL(url string, folderPath string) string {
+	fileName := ""
+
+	if strings.LastIndex(url, "/") != -1 {
+		fileName = url[strings.LastIndex(url, "/")+1 : len(url)]
+	}
+
+	if strings.LastIndex(url, "?") != -1 {
+		fileName = url[strings.LastIndex(url, "/")+1 : strings.LastIndex(url, "?")]
+	}
+
+	if strings.LastIndex(fileName, ".") == -1 {
+		fileName += ".jpeg"
+	}
+
+	return folderPath + "\\" + shared.CleanFileName(fileName)
 }
 
 func GetImageLinks(term string, imageType string, index int) []string {
@@ -146,19 +154,31 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	return result
 }
 
-func GetFileFullName(img string, folderPath string) string {	
-	url := img
+func GetFileFullName(img ImageItem, folderPath string) string {
+	url := ""
 	fileName := ""
 
+	if len(img.Dups) > 0 {
+		url = img.Dups[0].Origin.URL
+	}
+
+	if url == "" {
+		return folderPath + "\\" + shared.CleanFileName(fileName)
+	}
+
 	if strings.LastIndex(url, "/") != -1 {
-		fileName = url[strings.LastIndex(url, "/") + 1 : len(url)]		
+		fileName = url[strings.LastIndex(url, "/")+1 : len(url)]
 	}
 
 	if strings.LastIndex(url, "?") != -1 {
-		fileName = url[strings.LastIndex(url, "/") + 1 : strings.LastIndex(url, "?")]		
+		fileName = url[strings.LastIndex(url, "/")+1 : strings.LastIndex(url, "?")]
 	}
 
-	if strings.LastIndex(url, ".") == -1 {
+	if len(img.ID) != 0 {
+		fileName = img.ID + "_" + fileName
+	}
+
+	if strings.LastIndex(fileName, ".") == -1 {
 		fileName += ".jpeg"
 	}
 
