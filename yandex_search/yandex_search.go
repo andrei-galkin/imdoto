@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-)
 
-import shared "github.com/andrei-galkin/imdoto/shared"
+	shared "github.com/andrei-galkin/imdoto/shared"
+)
 
 type ImageItem struct {
 	ID   string `json:"id"`
