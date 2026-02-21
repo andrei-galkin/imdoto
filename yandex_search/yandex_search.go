@@ -104,7 +104,7 @@ func GetFileFullNameFromURL(url string, folderPath string) string {
 	fileName := ""
 
 	if strings.LastIndex(url, "/") != -1 {
-		fileName = url[strings.LastIndex(url, "/")+1 : len(url)]
+		fileName = url[strings.LastIndex(url, "/")+1:]
 	}
 
 	if strings.LastIndex(url, "?") != -1 {
@@ -167,7 +167,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 	}
 
 	if strings.LastIndex(url, "/") != -1 {
-		fileName = url[strings.LastIndex(url, "/")+1 : len(url)]
+		fileName = url[strings.LastIndex(url, "/")+1:]
 	}
 
 	if strings.LastIndex(url, "?") != -1 {
