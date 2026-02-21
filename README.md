@@ -1,24 +1,57 @@
-# Intro
- **imdoto** is a golang program to search keywords or phrases on Google Images Search or Bing Image Seach and automatically download images to your computer. 
- 
-# Disclaimer
-This console utility lets you download dozens of images from Google search engine. No copyright infringement is intended. We do not own the pictures which might be download by the tool. The tool is not meant to violate any licenses nor is any disrespect intended. Please do not download or use any image that violates its copyright terms. Google Images is a search engine that merely indexes images and allows you to find them. The tool does NOT produce its own images and, as such, it doesn't own copyright on any of them. The original creators of the images own the copyrights. Images published in the United States are automatically copyrighted by their owners, even if they do not explicitly carry a copyright warning. You may not reproduce copyright images without their owner's permission, except in "fair use" cases, or you could risk running into lawyer's warnings, cease-and-desist letters, and copyright suits. Please be very careful before its usage!
+# imdoto
 
-# Build
-Go to **imdoto** folder and run the command 
-``` go build ```
+`imdoto` is a small Go CLI that searches image engines (Google, Bing, Yandex) and downloads matching images to a local folder.
 
-# Arguments
-Argument | Description
------------- | -------------
-engine | google, bing and yandex
-key    | Denotes the term or phrases you want to search for. For more than one keywords, wrap it in single quotes.
-folder | The name of the folder where the downloaded images will be stored
-type   | File types such as jpeg, png, bmp, gif or * is any file type
-limit  | How many images you are going to download from the seach result
+Important: respect copyright and the terms of the image providers when using this tool.
 
-# Example
-```imdoto.exe -engine "google" -limit 1000 -term "apple seed"```
+**Status**: buildable and tested locally. Tests are included for the search packages.
 
-# Contribute
-Anyone is welcomed to contribute to this script. If you would like to make a change, open a pull request. For issues and discussion visit the Issue Tracker.
+## Quick start
+
+- Build the CLI (from the repository root):
+
+```powershell
+cd C:\dev\imdoto
+go build ./imdoto
+```
+
+- Run the produced executable (`imdoto.exe`) with flags:
+
+```powershell
+.\imdoto.exe -engine "google" -term "apple seed" -folder "images" -limit 100 -type "jpeg"
+```
+
+Flags:
+
+- `-engine` : `google`, `bing`, or `yandex` (default: `yandex`)
+- `-term`   : search term (words with spaces should be quoted)
+- `-folder` : destination folder name (default: `img`)
+- `-limit`  : maximum number of images to download (default: `75`)
+- `-type`   : image file type filter (e.g. `jpeg`, `png`, or `*` for any)
+
+## Run tests
+
+```powershell
+cd C:\dev\imdoto
+go test ./...
+```
+
+## Formatting & vet
+
+```powershell
+go fmt ./...
+go vet ./...
+```
+
+## Notes
+
+- Module file: `go.mod` has module path `github.com/andrei-galkin/imdoto`.
+- A `.gitignore` exists to ignore build artifacts and editor files.
+
+## Contributing
+
+- Open issues or PRs. Consider adding CI (GitHub Actions) to run `go test` and a linter such as `golangci-lint`.
+
+## License
+
+See `Licence.txt`.

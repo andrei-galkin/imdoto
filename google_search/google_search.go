@@ -2,6 +2,7 @@ package googlesearch
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-)
 
-import shared "github.com/andrei-galkin/imdoto/shared"
+	shared "github.com/andrei-galkin/imdoto/shared"
+)
 
 type ImageItem struct {
 	ID  string `json:"id"`
@@ -44,6 +45,19 @@ func Download(option shared.Setting) {
 	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
 			imageLinks = GetImageLinks(option.Term, option.ImageType, index-1)
+			if len(imageLinks) == 0 {
+				shared.PrintError(errors.New("no image links found"))
+				break
+			}
+		}
+		if imageIndex >= len(imageLinks) {
+			// no more items in current batch; try resetting to fetch next batch
+			imageIndex = 0
+			imageLinks = GetImageLinks(option.Term, option.ImageType, index)
+			if len(imageLinks) == 0 {
+				shared.PrintError(errors.New("no image links found"))
+				break
+			}
 		}
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
@@ -150,10 +164,22 @@ func GetImageLinks(term string, imageType string, index int) []string {
 
 func GetFileFullName(img ImageItem, folderPath string) string {
 	url := img.Ou
-	fileName := img.ID[0 : len(img.ID)-1]
+	fileName := ""
+
+	if len(img.ID) > 1 {
+		fileName = img.ID[0 : len(img.ID)-1]
+	} else if len(img.ID) == 1 {
+		fileName = img.ID
+	}
 
 	if len(img.Ity) != 0 {
-		fileName += "_" + url[strings.LastIndex(img.Ou, "/")+1:strings.LastIndex(img.Ou, ".")] + "." + img.Ity
+		start := strings.LastIndex(img.Ou, "/")
+		end := strings.LastIndex(img.Ou, ".")
+		if start != -1 && end != -1 && end > start {
+			fileName += "_" + url[start+1:end] + "." + img.Ity
+		} else {
+			fileName += "." + img.Ity
+		}
 	} else {
 		fileName += ".jpeg"
 	}
