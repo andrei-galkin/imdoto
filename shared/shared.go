@@ -49,6 +49,32 @@ func GetSetting() (Setting, error) {
 	return setting, nil
 }
 
+func ValidateSetting(setting Setting) error {
+	switch setting.Engine {
+	case "google", "bing", "yandex":
+	default:
+		return fmt.Errorf("unsupported engine: %q", setting.Engine)
+	}
+
+	if len(setting.Term) == 0 {
+		return fmt.Errorf("search term cannot be empty")
+	}
+
+	if setting.Limit <= 0 {
+		return fmt.Errorf("limit must be greater than zero")
+	}
+
+	if len(setting.FolderName) == 0 {
+		return fmt.Errorf("folder name cannot be empty")
+	}
+
+	if len(setting.ImageType) == 0 {
+		return fmt.Errorf("image type cannot be empty")
+	}
+
+	return nil
+}
+
 func CleanFileName(fileName string) string {
 	symbols := [10]string{"*", "?", "%", "\\", "/", " ", "+", "#", "@", "~"}
 	for _, symbol := range symbols {

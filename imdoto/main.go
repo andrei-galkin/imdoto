@@ -13,6 +13,10 @@ func main() {
 		log.Fatalf("Configuration error: %v", err)
 	}
 
+	if err := shared.ValidateSetting(setting); err != nil {
+		log.Fatalf("Invalid settings: %v", err)
+	}
+
 	s, err := search_engine.NewSearchEngine(setting.Engine)
 	if err != nil {
 		log.Fatalf("Invalid engine: %v", err)
