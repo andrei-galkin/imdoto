@@ -2,6 +2,7 @@ package yandexsearch
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -43,7 +44,14 @@ func (ys *YandexSearch) Download(option shared.Setting) error {
 
 	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
-			imageLinks = GetImageLinks(option.Term, option.ImageType, index)
+			var err error
+			imageLinks, err = GetImageLinks(option.Term, option.ImageType, index)
+			if err != nil {
+				return shared.WrapError(err, "failed to fetch image links")
+			}
+			if len(imageLinks) == 0 {
+				return errors.New("no image links found")
+			}
 		}
 
 		wg.Add(1)
@@ -94,7 +102,7 @@ func DownloadImage(url string, folderPath string, index int) {
 	fullName := GetFileFullNameFromURL(url, folderPath)
 
 	if err := DownloadFile(fullName, url); err != nil {
-		shared.PrintError(err)
+		shared.LogError(shared.WrapError(err, "failed to download image"))
 	}
 	indexStr := strconv.Itoa(index) + "."
 
@@ -124,7 +132,7 @@ func GetFileFullNameFromURL(url string, folderPath string) string {
 	return folderPath + "\\" + shared.CleanFileName(fileName)
 }
 
-func GetImageLinks(term string, imageType string, index int) []string {
+func GetImageLinks(term string, imageType string, index int) ([]string, error) {
 	url := "https://yandex.ru/images/search?rpt=image&format=json&text=" + term
 
 	url += "&p=" + strconv.Itoa(index/30)
@@ -137,27 +145,33 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	url += "&request={%22blocks%22:[{%22block%22:%22gallery__items:ajax%22,%22params%22:{},%22version%22:2}]}"
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, shared.WrapError(err, "failed to create HTTP request")
+	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		shared.PrintError(err)
+		return nil, shared.WrapError(err, "failed to fetch image results")
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, shared.WrapError(err, "failed to read response body")
+	}
 	page := string(body)
 
 	r := regexp.MustCompile(`img_url=([\s\S]*?)&amp;text=`)
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
 	var result []string
-
 	for _, ImageItem := range imageLinks {
 		result = append(result, strings.Replace(ImageItem[1], "%3A", ":", -1))
 	}
 
-	return result
+	return result, nil
 }
 
 func GetFileFullName(img ImageItem, folderPath string) string {

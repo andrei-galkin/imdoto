@@ -49,7 +49,11 @@ func (gs *GoogleSearch) Download(setting shared.Setting) error {
 
 	for index := 1; index <= setting.Limit; index++ {
 		if imageIndex == 0 {
-			imageLinks = GetImageLinks(setting.Term, setting.ImageType, index-1)
+			var err error
+			imageLinks, err = GetImageLinks(setting.Term, setting.ImageType, index-1)
+			if err != nil {
+				return shared.WrapError(err, "failed to fetch image links")
+			}
 			if len(imageLinks) == 0 {
 				return errors.New("no image links found")
 			}
@@ -57,7 +61,11 @@ func (gs *GoogleSearch) Download(setting shared.Setting) error {
 		if imageIndex >= len(imageLinks) {
 			// no more items in current batch; try resetting to fetch next batch
 			imageIndex = 0
-			imageLinks = GetImageLinks(setting.Term, setting.ImageType, index)
+			var err error
+			imageLinks, err = GetImageLinks(setting.Term, setting.ImageType, index)
+			if err != nil {
+				return shared.WrapError(err, "failed to fetch next batch of image links")
+			}
 			if len(imageLinks) == 0 {
 				return errors.New("no image links found")
 			}
@@ -116,7 +124,7 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := DownloadFile(fullName, img.Ou); err != nil {
-		shared.PrintError(err)
+		shared.LogError(shared.WrapError(err, "failed to download image"))
 	}
 	indexStr := strconv.Itoa(index) + "."
 
@@ -127,7 +135,7 @@ func DownloadImage(img ImageItem, folderPath string, index int) {
 	wg.Done()
 }
 
-func GetImageLinks(term string, imageType string, index int) []string {
+func GetImageLinks(term string, imageType string, index int) ([]string, error) {
 	url := "https://www.google.com/search?q=" + term + "&oq=" + term
 
 	imageType = strings.Trim(imageType, " ")
@@ -143,27 +151,33 @@ func GetImageLinks(term string, imageType string, index int) []string {
 	}
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, shared.WrapError(err, "failed to create HTTP request")
+	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		shared.PrintError(err)
+		return nil, shared.WrapError(err, "failed to fetch image results")
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, shared.WrapError(err, "failed to read image results response")
+	}
 	page := string(body)
 
 	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")
 	imageLinks := r.FindAllStringSubmatch(page, -1)
 
 	var result []string
-
 	for _, ImageItem := range imageLinks {
 		result = append(result, ImageItem[1])
 	}
 
-	return result
+	return result, nil
 }
 
 func GetFileFullName(img ImageItem, folderPath string) string {

@@ -2,6 +2,8 @@ package shared
 
 import (
 	"flag"
+	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,8 +57,22 @@ func CleanFileName(fileName string) string {
 	return fileName
 }
 
+// LogError logs an error message without stopping execution
+func LogError(err error) {
+	if err != nil {
+		log.Printf("ERROR: %v", err)
+	}
+}
+
+// WrapError adds context to an error
+func WrapError(err error, context string) error {
+	if err != nil {
+		return fmt.Errorf("%s: %w", context, err)
+	}
+	return nil
+}
+
+// DeprecatedPrintError is deprecated - use LogError instead
 func PrintError(err error) {
-	println("<==============ERROR======================>")
-	println(err.Error())
-	println("<==============ERROR======================>")
+	LogError(err)
 }
