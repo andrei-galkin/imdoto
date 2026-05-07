@@ -21,6 +21,13 @@ type Setting struct {
 	FolderPath string
 }
 
+// Limits the number of simultaneous image downloads
+const MaxConcurrentDownloads = 5
+
+var HTTPClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
 func GetSetting() (Setting, error) {
 	engine := flag.String("engine", "yandex", "search engine: google, bing, or yandex")
 	folderName := flag.String("folder", "img", "destination folder name")
@@ -76,10 +83,6 @@ func ValidateSetting(setting Setting) error {
 	}
 
 	return nil
-}
-
-var HTTPClient = &http.Client{
-	Timeout: 30 * time.Second,
 }
 
 func DownloadFile(filePath string, url string) error {

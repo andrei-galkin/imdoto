@@ -46,6 +46,7 @@ func NewSearchEngine() *GoogleSearch {
 func (gs *GoogleSearch) Download(setting shared.Setting) error {
 	var imageLinks []string
 	imageIndex := 0
+	sem := make(chan struct{}, shared.MaxConcurrentDownloads)
 
 	for index := 1; index <= setting.Limit; index++ {
 		if imageIndex == 0 {
@@ -79,7 +80,7 @@ func (gs *GoogleSearch) Download(setting shared.Setting) error {
 		imageIndex += 1
 
 		wg.Add(1)
-		go DownloadImage(img, setting.FolderPath, index)
+		go DownloadImage(img, setting.FolderPath, index, sem)
 
 		//exit if there is less images then limit
 		if imageIndex == len(imageLinks)-1 && len(imageLinks) != 100 {
@@ -95,7 +96,10 @@ func (gs *GoogleSearch) Download(setting shared.Setting) error {
 	return nil
 }
 
-func DownloadImage(img ImageItem, folderPath string, index int) {
+func DownloadImage(img ImageItem, folderPath string, index int, sem chan struct{}) {
+	sem <- struct{}{}
+	defer func() { <-sem }()
+
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := shared.DownloadFile(fullName, img.Ou); err != nil {

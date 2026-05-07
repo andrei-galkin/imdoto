@@ -37,6 +37,7 @@ type BingSearch struct{}
 func (bs *BingSearch) Download(option shared.Setting) error {
 	var imageLinks []string
 	imageIndex := 0
+	sem := make(chan struct{}, shared.MaxConcurrentDownloads)
 
 	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
@@ -58,7 +59,7 @@ func (bs *BingSearch) Download(option shared.Setting) error {
 		imageIndex += 1
 
 		wg.Add(1)
-		go DownloadImage(img, option.FolderPath, index)
+		go DownloadImage(img, option.FolderPath, index, sem)
 
 		//exit if there less images then limit
 		if imageIndex == len(imageLinks)-1 && len(imageLinks) != 35 {
@@ -74,7 +75,10 @@ func (bs *BingSearch) Download(option shared.Setting) error {
 	return nil
 }
 
-func DownloadImage(img ImageItem, folderPath string, index int) {
+func DownloadImage(img ImageItem, folderPath string, index int, sem chan struct{}) {
+	sem <- struct{}{}
+	defer func() { <-sem }()
+
 	fullName := GetFileFullName(img, folderPath)
 
 	if err := shared.DownloadFile(fullName, img.Murl); err != nil {

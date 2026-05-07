@@ -41,6 +41,7 @@ type YandexSearch struct{}
 func (ys *YandexSearch) Download(option shared.Setting) error {
 	var imageLinks []string
 	imageIndex := 0
+	sem := make(chan struct{}, shared.MaxConcurrentDownloads)
 
 	for index := 1; index <= option.Limit; index++ {
 		if imageIndex == 0 {
@@ -55,7 +56,7 @@ func (ys *YandexSearch) Download(option shared.Setting) error {
 		}
 
 		wg.Add(1)
-		go DownloadImage(imageLinks[imageIndex], option.FolderPath, index)
+		go DownloadImage(imageLinks[imageIndex], option.FolderPath, index, sem)
 
 		imageIndex += 1
 
@@ -73,7 +74,10 @@ func (ys *YandexSearch) Download(option shared.Setting) error {
 	return nil
 }
 
-func DownloadImage(url string, folderPath string, index int) {
+func DownloadImage(url string, folderPath string, index int, sem chan struct{}) {
+	sem <- struct{}{}
+	defer func() { <-sem }()
+
 	fullName := GetFileFullNameFromURL(url, folderPath)
 
 	if err := shared.DownloadFile(fullName, url); err != nil {
