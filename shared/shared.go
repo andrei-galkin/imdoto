@@ -3,10 +3,13 @@ package shared
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Setting struct {
@@ -75,6 +78,45 @@ func ValidateSetting(setting Setting) error {
 	return nil
 }
 
+var HTTPClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+func DownloadFile(filePath string, url string) error {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+
+	resp, err := HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("download failed: %s", resp.Status)
+	}
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func NormalizeFolderPath(folderPath string) string {
+	if len(folderPath) == 2 && folderPath[1] == ':' {
+		return folderPath + string(os.PathSeparator)
+	}
+	return filepath.Clean(folderPath)
+}
+
 func CleanFileName(fileName string) string {
 	symbols := [10]string{"*", "?", "%", "\\", "/", " ", "+", "#", "@", "~"}
 	for _, symbol := range symbols {
@@ -83,14 +125,12 @@ func CleanFileName(fileName string) string {
 	return fileName
 }
 
-// LogError logs an error message without stopping execution
 func LogError(err error) {
 	if err != nil {
 		log.Printf("ERROR: %v", err)
 	}
 }
 
-// WrapError adds context to an error
 func WrapError(err error, context string) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", context, err)
@@ -98,7 +138,6 @@ func WrapError(err error, context string) error {
 	return nil
 }
 
-// DeprecatedPrintError is deprecated - use LogError instead
 func PrintError(err error) {
 	LogError(err)
 }

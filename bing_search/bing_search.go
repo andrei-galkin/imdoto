@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,35 +74,10 @@ func (bs *BingSearch) Download(option shared.Setting) error {
 	return nil
 }
 
-func DownloadFile(filePath string, url string) error {
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36")
-	req.Header.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-	req.Header.Add("authority", "cdn-images-1.medium.com")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
-}
-
 func DownloadImage(img ImageItem, folderPath string, index int) {
 	fullName := GetFileFullName(img, folderPath)
 
-	if err := DownloadFile(fullName, img.Murl); err != nil {
+	if err := shared.DownloadFile(fullName, img.Murl); err != nil {
 		shared.LogError(shared.WrapError(err, "failed to download image"))
 	}
 	indexStr := strconv.Itoa(index) + "."
@@ -125,7 +100,7 @@ func GetImageLinks(term string, imageType string, index int) ([]string, error) {
 
 	url += "&first=" + strconv.Itoa(index) + "&count=35&relp=35"
 
-	client := &http.Client{}
+	client := shared.HTTPClient
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, shared.WrapError(err, "failed to create HTTP request")
@@ -156,14 +131,11 @@ func GetImageLinks(term string, imageType string, index int) ([]string, error) {
 }
 
 func GetFileFullName(img ImageItem, folderPath string) string {
-	url := img.Murl
-	fileName := img.Cid + "_" + url[strings.LastIndex(img.Murl, "/")+1:len(img.Murl)]
+	folderPath = shared.NormalizeFolderPath(folderPath)
+	urlBase := strings.SplitN(img.Murl, "?", 2)[0]
+	fileName := img.Cid + "_" + filepath.Base(urlBase)
 
-	if strings.LastIndex(img.Murl, "?") != -1 {
-		fileName = url[strings.LastIndex(img.Murl, "/")+1 : strings.LastIndex(img.Murl, "?")]
-	}
-
-	if strings.LastIndex(img.Murl, ".") == -1 {
+	if strings.LastIndex(fileName, ".") == -1 {
 		fileName += ".jpeg"
 	}
 
@@ -171,7 +143,7 @@ func GetFileFullName(img ImageItem, folderPath string) string {
 		fileName = img.Cid + fileName[strings.LastIndex(fileName, ".")+1:len(fileName)]
 	}
 
-	return folderPath + `\` + shared.CleanFileName(fileName)
+	return filepath.Join(folderPath, shared.CleanFileName(fileName))
 }
 
 func GetImageItemFromJson(jsonString string) (ImageItem, error) {
