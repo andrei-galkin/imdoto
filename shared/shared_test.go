@@ -13,7 +13,10 @@ func TestCleanFileName(t *testing.T) {
 
 func TestGetSetting(t *testing.T) {
 
-	setting := GetSetting()
+	setting, err := GetSetting()
+	if err != nil {
+		t.Fatalf("Failed to get setting: %v", err)
+	}
 
 	if len(setting.Engine) == 0 {
 		t.Errorf("setting.Engine is empty!")

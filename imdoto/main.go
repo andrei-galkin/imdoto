@@ -1,19 +1,24 @@
 package main
 
-import google "github.com/andrei-galkin/imdoto/google_search"
-import bing "github.com/andrei-galkin/imdoto/bing_search"
-import yandex "github.com/andrei-galkin/imdoto/yandex_search"
-import shared "github.com/andrei-galkin/imdoto/shared"
+import (
+	"log"
+
+	search_engine "github.com/andrei-galkin/imdoto/search_engine"
+	shared "github.com/andrei-galkin/imdoto/shared"
+)
 
 func main() {
-	setting := shared.GetSetting()
+	setting, err := shared.GetSetting()
+	if err != nil {
+		log.Fatalf("Configuration error: %v", err)
+	}
 
-	switch setting.Engine {
-	case "google":
-		google.Download(setting)
-	case "bing":
-		bing.Download(setting)
-	case "yandex":
-		yandex.Download(setting)
+	s, err := search_engine.NewSearchEngine(setting.Engine)
+	if err != nil {
+		log.Fatalf("Invalid engine: %v", err)
+	}
+
+	if err := s.Download(setting); err != nil {
+		log.Fatalf("Download failed: %v", err)
 	}
 }

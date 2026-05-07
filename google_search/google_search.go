@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -36,39 +35,43 @@ type ImageItem struct {
 	Tw  int    `json:"tw"`
 }
 
+type GoogleSearch struct{}
+
 var wg sync.WaitGroup
 
-func Download(option shared.Setting) {
+func NewSearchEngine() *GoogleSearch {
+	return &GoogleSearch{}
+}
+
+func (gs *GoogleSearch) Download(setting shared.Setting) error {
 	var imageLinks []string
 	imageIndex := 0
 
-	for index := 1; index <= option.Limit; index++ {
+	for index := 1; index <= setting.Limit; index++ {
 		if imageIndex == 0 {
-			imageLinks = GetImageLinks(option.Term, option.ImageType, index-1)
+			imageLinks = GetImageLinks(setting.Term, setting.ImageType, index-1)
 			if len(imageLinks) == 0 {
-				shared.PrintError(errors.New("no image links found"))
-				break
+				return errors.New("no image links found")
 			}
 		}
 		if imageIndex >= len(imageLinks) {
 			// no more items in current batch; try resetting to fetch next batch
 			imageIndex = 0
-			imageLinks = GetImageLinks(option.Term, option.ImageType, index)
+			imageLinks = GetImageLinks(setting.Term, setting.ImageType, index)
 			if len(imageLinks) == 0 {
-				shared.PrintError(errors.New("no image links found"))
-				break
+				return errors.New("no image links found")
 			}
 		}
 
 		img, err := GetImageItemFromJson(imageLinks[imageIndex])
 		if err != nil {
-			shared.PrintError(err)
+			return err
 		}
 
 		imageIndex += 1
 
 		wg.Add(1)
-		go DownloadImage(img, option.FolderPath, index)
+		go DownloadImage(img, setting.FolderPath, index)
 
 		//exit if there is less images then limit
 		if imageIndex == len(imageLinks)-1 && len(imageLinks) != 100 {
@@ -81,6 +84,7 @@ func Download(option shared.Setting) {
 	}
 
 	wg.Wait()
+	return nil
 }
 
 func DownloadFile(filePath string, url string) error {
@@ -147,7 +151,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 		shared.PrintError(err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	page := string(body)
 
 	r := regexp.MustCompile("<div class=\"rg_meta notranslate\">([\\s\\S]*?)</div>")

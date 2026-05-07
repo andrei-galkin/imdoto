@@ -16,22 +16,24 @@ type Setting struct {
 	FolderPath string
 }
 
-func GetSetting() Setting {
-	engine := flag.String("engine", "yandex", "a string")
-	folderName := flag.String("folder", "img", "a string")
-	term := flag.String("term", "apple", "a string")
-	limit := flag.Int("limit", 75, "a int")
-	imageType := flag.String("type", "*", "a string")
+func GetSetting() (Setting, error) {
+	engine := flag.String("engine", "yandex", "search engine: google, bing, or yandex")
+	folderName := flag.String("folder", "img", "destination folder name")
+	term := flag.String("term", "apple", "search term")
+	limit := flag.Int("limit", 75, "maximum number of images to download")
+	imageType := flag.String("type", "*", "image file type filter (e.g., jpeg, png, or *)")
 	flag.Parse()
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		panic(err)
+		return Setting{}, err
 	}
 
-	folderPath := dir + `\` + *folderName
+	folderPath := filepath.Join(dir, *folderName)
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		os.Mkdir(folderPath, os.ModePerm)
+		if err := os.Mkdir(folderPath, os.ModePerm); err != nil {
+			return Setting{}, err
+		}
 	}
 
 	var setting Setting
@@ -42,7 +44,7 @@ func GetSetting() Setting {
 	setting.ImageType = *imageType
 	setting.Engine = *engine
 
-	return setting
+	return setting, nil
 }
 
 func CleanFileName(fileName string) string {

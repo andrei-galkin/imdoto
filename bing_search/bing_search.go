@@ -3,7 +3,6 @@ package bingsearch
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -28,7 +27,13 @@ type ImageItem struct {
 
 var wg sync.WaitGroup
 
-func Download(option shared.Setting) {
+func NewSearchEngine() *BingSearch {
+	return &BingSearch{}
+}
+
+type BingSearch struct{}
+
+func (bs *BingSearch) Download(option shared.Setting) error {
 	var imageLinks []string
 	imageIndex := 0
 
@@ -58,6 +63,7 @@ func Download(option shared.Setting) {
 	}
 
 	wg.Wait()
+	return nil
 }
 
 func DownloadFile(filePath string, url string) error {
@@ -120,7 +126,7 @@ func GetImageLinks(term string, imageType string, index int) []string {
 		shared.PrintError(err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	page := string(body)
 
 	r := regexp.MustCompile(" m=\"([\\s\\S]*?)\" onclick=\"")
