@@ -21,19 +21,16 @@ type Setting struct {
 	FolderPath string
 }
 
-// Limits the number of simultaneous image downloads
-const MaxConcurrentDownloads = 5
-
 var HTTPClient = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
 func GetSetting() (Setting, error) {
-	engine := flag.String("engine", "yandex", "search engine: google, bing, or yandex")
-	folderName := flag.String("folder", "img", "destination folder name")
-	term := flag.String("term", "apple", "search term")
-	limit := flag.Int("limit", 75, "maximum number of images to download")
-	imageType := flag.String("type", "*", "image file type filter (e.g., jpeg, png, or *)")
+	engine := flag.String("engine", DefaultEngine, "search engine: google, bing, or yandex")
+	folderName := flag.String("folder", DefaultFolder, "destination folder name")
+	term := flag.String("term", DefaultSearchTerm, "search term")
+	limit := flag.Int("limit", DefaultLimit, "maximum number of images to download")
+	imageType := flag.String("type", DefaultImageType, "image file type filter (e.g., jpeg, png, or *)")
 	flag.Parse()
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -70,8 +67,8 @@ func ValidateSetting(setting Setting) error {
 		return fmt.Errorf("search term cannot be empty")
 	}
 
-	if setting.Limit <= 0 {
-		return fmt.Errorf("limit must be greater than zero")
+	if setting.Limit < 1 || setting.Limit > 1000 {
+		return fmt.Errorf("limit must be between 1 and 1000")
 	}
 
 	if len(setting.FolderName) == 0 {
